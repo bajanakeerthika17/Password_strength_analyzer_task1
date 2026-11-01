@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Password Strength Analyzer & Cryptography Vault</title>
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>">
+    <!-- Clean, responsive styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') if url_for is defined else 'static/css/style.css' }}">
+</head>
+<body>
+
+<div class="container">
+
+    <!-- Header Section -->
+    <header class="header-section">
+        <div class="brand-badge">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 1.944A11.954 11.954 0 012.166 5C2.056 5.649 2 6.319 2 7c0 5.225 3.34 9.67 8 11.317C14.66 16.67 18 12.225 18 7c0-.682-.057-1.35-.166-2.001A11.954 11.954 0 0110 1.944zM11 14a1 1 0 11-2 0 1 1 0 012 0zm0-7a1 1 0 10-2 0v3a1 1 0 102 0V7z" clip-rule="evenodd"/>
+            </svg>
+            Cybersecurity & Cryptography Analyzer
+        </div>
+        <h1 class="main-title">Password Strength Analyzer</h1>
+        <p class="main-subtitle">
+            Evaluate password resilience against modern brute-force attacks in real time, analyze Shannon entropy, detect breach patterns, and verify salted SHA-256 database storage.
+        </p>
+    </header>
+
+    <!-- Main Analyzer Card -->
+    <main class="analyzer-card">
+        <!-- Input Wrapper with Show/Hide Toggle -->
+        <div class="input-wrapper">
+            <input 
+                type="password" 
+                id="passwordInput" 
+                class="password-input" 
+                placeholder="Type or generate a password..." 
+                autocomplete="off" 
+                spellcheck="false"
+                aria-label="Password to analyze"
+            >
+            <div class="input-actions">
+                <button type="button" id="clearInputBtn" class="icon-btn clear-btn hidden" title="Clear input">
+                    ✕
+                </button>
+                <button type="button" id="toggleVisibility" class="icon-btn" title="Show password" aria-label="Toggle password visibility">
+                    <!-- Eye Icon (Show) -->
+                    <svg class="eye-icon" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                    <!-- Eye Slash Icon (Hide) -->
+                    <svg class="eye-slash-icon hidden" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24M1 1l22 22"></path>
+                    </svg>
+                    <span class="toggle-text">Show</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Database Warning Banner (Triggered if password was previously used) -->
+        <div id="dbWarningBanner" class="warning-banner hidden" role="alert">
+            <!-- Populated dynamically via app.js -->
+        </div>
+
+        <!-- Pattern Detection Warnings Container -->
+        <div id="warningsContainer" class="warnings-grid hidden"></div>
+
+        <!-- Strength Meter & Score Section -->
+        <div class="strength-summary">
+            <span class="strength-title">Password Strength</span>
+            <div class="strength-indicator-group">
+                <span id="strengthLabel" class="strength-label">Enter a password</span>
+                <span id="scoreBadge" class="score-badge">0 / 100</span>
+            </div>
+        </div>
+
+        <!-- Continuous Progress Track -->
+        <div class="meter-track">
+            <div id="strengthBar" class="meter-bar"></div>
+        </div>
+
+        <!-- 5-Segment Visual Markers -->
+        <div class="meter-segments-bar">
+            <div class="meter-segment" title="Very Weak"></div>
+            <div class="meter-segment" title="Weak"></div>
+            <div class="meter-segment" title="Medium"></div>
+            <div class="meter-segment" title="Strong"></div>
+            <div class="meter-segment" title="Very Strong"></div>
+        </div>
+
+        <!-- 2-Column Grid: Checklist on left, Cryptographic Metrics on right -->
+        <div class="analysis-grid">
+            <!-- Left: Rules Checklist -->
+            <div class="panel-card">
+                <h2 class="panel-heading">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Security Checklist
+                </h2>
+                <div id="checklistContainer" class="checklist-container">
+                    <!-- Populated dynamically by analyzer.js -->
+                </div>
+            </div>
+
+            <!-- Right: Cryptography Metrics & Entropy -->
+            <div class="panel-card">
+                <h2 class="panel-heading">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                    Entropy & Crack Time
+                </h2>
+                <div class="metrics-list">
+                    <div class="metric-item">
+                        <div class="metric-label">Estimated Crack Time (Offline GPU)</div>
+                        <div id="crackTimeValue" class="metric-value">Instant</div>
+                        <div class="metric-sub">Assuming 10 billion hashes/sec (modern RTX 4090 cluster)</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-label">Shannon Information Entropy</div>
+                        <div id="entropyValue" class="metric-value">0 bits</div>
+                        <div class="metric-sub">H = L &times; log<sub>2</sub>(R) measure of unpredictability</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-label">Keyspace Search Space</div>
+                        <div id="combinationsValue" class="metric-value">0</div>
+                        <div class="metric-sub">Total mathematical combinations (R<sup>L</sup>)</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-label">Character Pool Size</div>
+                        <div id="charsetPoolValue" class="metric-value">0 chars</div>
+                        <div class="metric-sub">Lower (26), Upper (26), Digits (10), Symbols (33)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SQLite Database Registration (Feature 8) -->
+        <div class="db-action-card">
+            <div class="db-action-header">
+                <div>
+                    <strong style="color: #60a5fa; font-size: 1rem;">Database Vault Security Check</strong>
+                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.2rem;">
+                        Stores salted PBKDF2-SHA256 hashes in SQLite. Rejects passwords used in the vault.
+                    </p>
+                </div>
+                <span class="db-tag">SQLite + Salted SHA-256</span>
+            </div>
+            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                <button type="button" id="saveToDbBtn" class="btn btn-primary">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+                    </svg>
+                    Save / Register Password to SQLite
+                </button>
+            </div>
+            <div id="dbStatusMessage" class="status-msg hidden"></div>
+        </div>
+    </main>
+
+    <!-- Strong Alternatives Suggestions Section -->
+    <section class="section-card">
+        <div class="section-header">
+            <h2 class="section-title">
+                <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                </svg>
+                Suggested Stronger Alternatives
+            </h2>
+            <p class="section-desc">
+                Intelligently transformed variants of your password using leet mutations, salt sandwiches, and high-entropy phrasing.
+            </p>
+        </div>
+
+        <div id="alternativesContainer" class="suggestions-grid">
+            <!-- Populated dynamically by app.js -->
+        </div>
+
+        <!-- Secure Random Password Generator (Feature 7) -->
+        <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color);">
+            <div class="section-header">
+                <h3 style="font-size: 1.15rem; font-weight: 700; color: #34d399; display: flex; align-items: center; gap: 0.5rem;">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    Cryptographically Secure Generator
+                </h3>
+                <p class="section-desc">
+                    Generates 16-character high-entropy passwords using the Web Cryptography CSPRNG.
+                </p>
+            </div>
+            
+            <div class="generator-row">
+                <button type="button" id="generateBtn" class="btn btn-success">
+                    ⚡ Generate Strong Password
+                </button>
+                <div id="generatedBox" class="generated-output-box hidden">
+                    <input type="text" id="generatedPassword" class="generated-input" readonly>
+                    <button type="button" id="copyGeneratedBtn" class="btn btn-sm btn-outline" title="Copy to clipboard">
+                        Copy
+                    </button>
+                    <button type="button" id="fillGeneratedBtn" class="btn btn-sm btn-primary" title="Fill into analyzer">
+                        Test in Analyzer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SQLite Database Vault Inspector (Feature 8) -->
+    <section class="section-card">
+        <div class="vault-controls">
+            <div>
+                <h2 class="section-title">
+                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M4 7v10c0 2 1.5 3 3.5 3h9c2 0 3.5-1 3.5-3V7c0-2-1.5-3-3.5-3h-9C5.5 4 4 5 4 7zm0 4h16m-16 4h16"></path>
+                    </svg>
+                    SQLite Database Vault Inspector
+                    <span id="vaultCountBadge" class="score-badge" style="font-size: 0.75rem; border-color: #3b82f6; color: #60a5fa;">0 stored</span>
+                </h2>
+                <p class="section-desc">
+                    Live view of hashed records inside SQLite (<code>passwords.db</code>). Demonstrates zero-knowledge storage.
+                </p>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+                <button type="button" id="refreshVaultBtn" class="btn btn-sm btn-outline" title="Reload SQLite records">
+                    ↻ Refresh
+                </button>
+                <button type="button" id="clearVaultBtn" class="btn btn-sm btn-danger-outline" title="Clear database for re-testing">
+                    Clear Vault
+                </button>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="vault-table">
+                <thead>
+                    <tr>
+                        <th style="width: 60px;">ID</th>
+                        <th>Salt (128-bit CSPRNG)</th>
+                        <th>Cryptographic Hash (SHA-256)</th>
+                        <th>Algorithm & Work Factor</th>
+                        <th>Created At</th>
+                    </tr>
+                </thead>
+                <tbody id="vaultTableBody">
+                    <tr>
+                        <td colspan="5" class="empty-table-msg">Loading SQLite records...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="edu-callout">
+            <strong>🔒 Cryptographic Principle:</strong> Notice that plain text passwords are <em>never</em> stored in the database!
+            Only a 128-bit random salt and the 256-bit PBKDF2 hash are recorded. When checking if a password was previously used, the candidate is hashed with each stored salt and compared using constant-time digest verification.
+        </div>
+    </section>
+
+    <!-- Educational Cryptography Concepts Section -->
+    <section class="section-card">
+        <div class="section-header">
+            <h2 class="section-title">
+                <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                </svg>
+                Core Cryptography & Security Concepts
+            </h2>
+            <p class="section-desc">Key principles for your internship presentation</p>
+        </div>
+
+        <div class="concept-grid">
+            <div class="concept-card">
+                <h3 class="concept-title">#1. One-Way Hashing</h3>
+                <p class="concept-text">
+                    A cryptographic hash function like <strong>SHA-256</strong> maps arbitrary data to a fixed 256-bit digest. It is mathematically irreversible (one-way pre-image resistance) and features the <em>avalanche effect</em>: altering even a single bit in the input drastically alters the entire output digest.
+                </p>
+            </div>
+
+            <div class="concept-card">
+                <h3 class="concept-title">#2. Cryptographic Salting</h3>
+                <p class="concept-text">
+                    A salt is a 128-bit random string generated via a CSPRNG for every password. Salting ensures that identical passwords produce completely different hashes. This completely neutralizes <strong>Rainbow Tables</strong> (precomputed hash lookup tables) and prevents cross-user hash correlation.
+                </p>
+            </div>
+
+            <div class="concept-card">
+                <h3 class="concept-title">#3. Key Stretching (PBKDF2)</h3>
+                <p class="concept-text">
+                    Fast hash algorithms (MD5, raw SHA-256) can be computed billions of times per second on GPUs. <strong>PBKDF2</strong> applies 100,000 iterations of HMAC-SHA256, intentionally forcing computational work that makes offline brute-force cracking exponentially slower and economically unfeasible.
+                </p>
+            </div>
+
+            <div class="concept-card">
+                <h3 class="concept-title">#4. Shannon Entropy</h3>
+                <p class="concept-text">
+                    Entropy (<code>H = L &times; log<sub>2</sub>(R)</code>) quantifies the information density and unpredictability of a password in bits. A 16-character password with letters, digits, and symbols has ~105 bits of entropy, requiring 2<sup>104</sup> average guesses ($10^{31}$ operations), taking centuries to crack even on supercomputers.
+                </p>
+            </div>
+        </div>
+    </section>
+
+</div>
+
+<!-- Data and Scripts -->
+<script src="{{ url_for('static', filename='data/common_passwords.js') if url_for is defined else 'static/data/common_passwords.js' }}"></script>
+<script src="{{ url_for('static', filename='js/analyzer.js') if url_for is defined else 'static/js/analyzer.js' }}"></script>
+<script src="{{ url_for('static', filename='js/app.js') if url_for is defined else 'static/js/app.js' }}"></script>
+
+</body>
+</html>
+
